@@ -376,3 +376,205 @@ export function deleteReview(id: string): Review[] {
   localStorage.setItem('garuda_reviews', JSON.stringify(filtered));
   return filtered;
 }
+
+// ----------------------
+// GALLERY & MEDIA TYPES
+// ----------------------
+
+export interface GalleryItem {
+  id: string;
+  title: string;
+  caption?: string;
+  imageUrl: string;
+  category: 'Showroom' | 'Customer Delivery' | 'Vehicle Arrival' | 'Service Center' | 'Customization';
+  createdDate: string;
+  postedBy?: string;
+}
+
+export const SEED_GALLERY: GalleryItem[] = [
+  {
+    id: 'gal-1',
+    title: 'Garud Automobiles Main Showroom Entrance',
+    caption: 'Official dealership facility at Bijipur Main Rd, near Vegetables Market, Sundar Nagar, Brahmapur.',
+    imageUrl: '/vehicles/erickshaw_passenger.jpg',
+    category: 'Showroom',
+    createdDate: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(),
+    postedBy: 'Dealership Admin'
+  },
+  {
+    id: 'gal-2',
+    title: 'Customer Delivery: Garud Cargo Loader 750',
+    caption: 'Handed over high-torque commercial cargo loader to local wholesale distributor in Ganjam.',
+    imageUrl: '/vehicles/cargo_loader_blue.jpg',
+    category: 'Customer Delivery',
+    createdDate: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
+    postedBy: 'Dealership Admin'
+  },
+  {
+    id: 'gal-3',
+    title: 'Custom Fabricated Mobile Food Van',
+    caption: 'Custom stainless-steel prep counters and 220V inverter system deployed for local vendor.',
+    imageUrl: '/vehicles/ev_food_van.jpg',
+    category: 'Customization',
+    createdDate: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
+    postedBy: 'Dealership Admin'
+  },
+  {
+    id: 'gal-4',
+    title: 'Smart Battery Diagnostics & Maintenance Bay',
+    caption: 'Certified technicians performing high-precision BMS and lithium active cell tests.',
+    imageUrl: '/vehicles/ev_lithium_pack.jpg',
+    category: 'Service Center',
+    createdDate: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(),
+    postedBy: 'Dealership Admin'
+  }
+];
+
+// Async fetchers for synchronized public access across devices
+export async function fetchVehicles(): Promise<Vehicle[]> {
+  try {
+    const res = await fetch('/api/vehicles');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.vehicles)) {
+        if (isClient()) {
+          localStorage.setItem('garuda_vehicles', JSON.stringify(data.vehicles));
+        }
+        return data.vehicles;
+      }
+    }
+  } catch (err) {
+    console.warn('Fallback to local cached vehicles:', err);
+  }
+  return getVehicles();
+}
+
+export async function saveVehicleRemote(vehicle: Vehicle, token?: string): Promise<{ success: boolean; vehicles?: Vehicle[]; error?: string }> {
+  // Always update local cache for instant UI feedback
+  saveVehicle(vehicle);
+
+  try {
+    const authToken = token || (isClient() ? localStorage.getItem('garuda_admin_token') : null);
+    const res = await fetch('/api/vehicles', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+      },
+      body: JSON.stringify({ vehicle })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      if (isClient() && data.vehicles) {
+        localStorage.setItem('garuda_vehicles', JSON.stringify(data.vehicles));
+      }
+      return { success: true, vehicles: data.vehicles };
+    }
+    return { success: false, error: data.error || 'Server error saving vehicle.' };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Network failure communicating with server.' };
+  }
+}
+
+export async function deleteVehicleRemote(id: string, token?: string): Promise<{ success: boolean; vehicles?: Vehicle[]; error?: string }> {
+  deleteVehicle(id);
+
+  try {
+    const authToken = token || (isClient() ? localStorage.getItem('garuda_admin_token') : null);
+    const res = await fetch(`/api/vehicles?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: {
+        ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+      }
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      if (isClient() && data.vehicles) {
+        localStorage.setItem('garuda_vehicles', JSON.stringify(data.vehicles));
+      }
+      return { success: true, vehicles: data.vehicles };
+    }
+    return { success: false, error: data.error || 'Server error removing vehicle.' };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Network failure removing vehicle.' };
+  }
+}
+
+export function getGallery(): GalleryItem[] {
+  if (!isClient()) return SEED_GALLERY;
+  const saved = localStorage.getItem('garuda_gallery');
+  if (!saved) {
+    localStorage.setItem('garuda_gallery', JSON.stringify(SEED_GALLERY));
+    return SEED_GALLERY;
+  }
+  try {
+    return JSON.parse(saved);
+  } catch {
+    return SEED_GALLERY;
+  }
+}
+
+export async function fetchGallery(): Promise<GalleryItem[]> {
+  try {
+    const res = await fetch('/api/gallery');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.gallery)) {
+        if (isClient()) {
+          localStorage.setItem('garuda_gallery', JSON.stringify(data.gallery));
+        }
+        return data.gallery;
+      }
+    }
+  } catch (err) {
+    console.warn('Fallback to local gallery cache:', err);
+  }
+  return getGallery();
+}
+
+export async function saveGalleryItemRemote(item: GalleryItem, token?: string): Promise<{ success: boolean; gallery?: GalleryItem[]; error?: string }> {
+  try {
+    const authToken = token || (isClient() ? localStorage.getItem('garuda_admin_token') : null);
+    const res = await fetch('/api/gallery', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+      },
+      body: JSON.stringify({ item })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      if (isClient() && data.gallery) {
+        localStorage.setItem('garuda_gallery', JSON.stringify(data.gallery));
+      }
+      return { success: true, gallery: data.gallery };
+    }
+    return { success: false, error: data.error || 'Server error posting image to website.' };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Failed to post gallery image.' };
+  }
+}
+
+export async function deleteGalleryItemRemote(id: string, token?: string): Promise<{ success: boolean; gallery?: GalleryItem[]; error?: string }> {
+  try {
+    const authToken = token || (isClient() ? localStorage.getItem('garuda_admin_token') : null);
+    const res = await fetch(`/api/gallery?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: {
+        ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+      }
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      if (isClient() && data.gallery) {
+        localStorage.setItem('garuda_gallery', JSON.stringify(data.gallery));
+      }
+      return { success: true, gallery: data.gallery };
+    }
+    return { success: false, error: data.error || 'Server error removing image.' };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Failed to delete gallery image.' };
+  }
+}
+

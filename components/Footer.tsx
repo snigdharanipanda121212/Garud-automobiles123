@@ -116,8 +116,9 @@ export default function Footer() {
         <div>
           © {new Date().getFullYear()} Garud Automobiles. All rights reserved.
         </div>
-        <div className="flex gap-6">
+        <div className="flex flex-wrap gap-4 sm:gap-6">
           <Link href="/vehicles" className="hover:text-zinc-300 transition">Models</Link>
+          <Link href="/gallery" className="hover:text-amber-400 text-amber-500 font-medium transition">Live Photos</Link>
           <Link href="/about" className="hover:text-zinc-300 transition">About Ganjam Dealership</Link>
           <Link href="/contact" className="hover:text-zinc-300 transition">Request Catalog</Link>
           <Link href="/admin" className="hover:text-zinc-300 transition">Dealer Admin Portal</Link>

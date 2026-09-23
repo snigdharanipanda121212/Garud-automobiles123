@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getVehicles, Vehicle } from '@/lib/store';
+import { getVehicles, fetchVehicles, Vehicle } from '@/lib/store';
 import { useEnquiry } from '@/hooks/use-enquiry';
 import { Search, SlidersHorizontal, ShieldCheck, HeartCrack } from 'lucide-react';
 
@@ -19,6 +19,13 @@ export default function VehiclesPage() {
     const list = getVehicles();
     setVehicles(list);
     setFilteredVehicles(list);
+
+    // Sync remote vehicles from server
+    fetchVehicles().then((remoteList) => {
+      if (remoteList && remoteList.length > 0) {
+        setVehicles(remoteList);
+      }
+    });
   }, []);
 
   // Sync Search and Filters

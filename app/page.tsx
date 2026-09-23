@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getVehicles, Vehicle } from '@/lib/store';
+import { getVehicles, fetchVehicles, Vehicle } from '@/lib/store';
 import { useEnquiry } from '@/hooks/use-enquiry';
+import LiveGallerySection from '@/components/LiveGallerySection';
 import { 
   Sparkles, 
   ArrowRight, 
@@ -44,6 +45,14 @@ export default function HomePage() {
     // Double safeguard to make sure no e-scooters are present
     const nonScooters = all.filter(v => v.category !== ('E-Scooter' as any));
     setVehicles(nonScooters);
+
+    // Sync remote vehicles from server so any admin edits are visible to everyone
+    fetchVehicles().then((remoteVehicles) => {
+      if (remoteVehicles && remoteVehicles.length > 0) {
+        const valid = remoteVehicles.filter(v => v.category !== ('E-Scooter' as any));
+        setVehicles(valid);
+      }
+    });
 
     // Dynamic price limit calculation based on catalog content
     const prices = nonScooters.map(v => parseInt(v.price.replace(/[^0-9]/g, ''), 10)).filter(p => !isNaN(p));
@@ -640,7 +649,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 6. CUSTOMER REVIEWS SECTION */}
+      {/* 6. LIVE SHOWROOM & DELIVERY STREAM - Admin Only Updates, Publicly Visible */}
+      <LiveGallerySection limit={6} showViewAllButton={true} />
+
+      {/* 7. CUSTOMER REVIEWS SECTION */}
       <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-b border-zinc-900">
         <div className="flex flex-col items-center text-center max-w-3xl mx-auto mb-16 space-y-4">
           <span className="text-amber-505 font-bold uppercase tracking-widest text-xs font-mono">Customer Endorsements</span>

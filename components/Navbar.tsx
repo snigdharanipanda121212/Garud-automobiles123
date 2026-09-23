@@ -16,6 +16,7 @@ export default function Navbar() {
   const links = [
     { label: 'Showroom', path: '/' },
     { label: 'E-Vehicles', path: '/vehicles' },
+    { label: 'Live Photos', path: '/gallery' },
     { label: 'Reviews', path: '/reviews' },
     { label: 'About', path: '/about' },
     { label: 'Contact Us', path: '/contact' },
